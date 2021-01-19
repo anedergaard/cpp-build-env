@@ -35,6 +35,7 @@ RUN apt-get update \
       ninja-build \
       git \
       distcc \
+      htop \
   && apt-get clean
 
 # CMake with Ninja Multi-Config Generator
