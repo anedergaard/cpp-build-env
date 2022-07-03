@@ -14,6 +14,9 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     build-essential \
     gdb \
     clang \
+    clang-tools \
+    clang-tidy \
+    clang-format \
     libstdc++-12-dev \
     libstdc++-arm-none-eabi-newlib \
     llvm \
@@ -25,17 +28,16 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     git \
     cmake \
     wget \
-    && apt-get clean
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --reinstall ca-certificates \
+    && apt-get clean  \
 
-RUN git config --global http.sslverify false
+RUN sudo mkdir /usr/local/share/ca-certificates/cacert.org \
+    && sudo wget -P /usr/local/share/ca-certificates/cacert.org http://www.cacert.org/certs/root.crt http://www.cacert.org/certs/class3.crt \
+    && sudo update-ca-certificates \
+    && git config --global http.sslCAinfo /etc/ssl/certs/ca-certificates.crt
 
 RUN cd /tmp \
     && git clone --branch llvmorg-14.0.6 --depth 1 --progress https://github.com/llvm/llvm-project.git llvm-project
-
-RUN cd /tmp/llvm-project \
-    && mkdir build && cd build \
-    && cmake -DLLVM_ENABLE_PROJECTS=clang -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" ../llvm \
-    && make -j 8 && make install
 
 RUN cd /tmp/llvm-project/compiler-rt \
     && ls \
@@ -79,3 +81,4 @@ RUN chmod 755 /root
 
 RUN locale-gen en_US.UTF-8
 RUN rm -f .bash_history
+RUN rm -rf /tmp
