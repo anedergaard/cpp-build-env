@@ -1,8 +1,8 @@
-FROM ubuntu:22.10
+FROM --platform=$BUILDPLATFORM ubuntu:22.10
 
 LABEL maintainer="Anders Bjørn Nedergaard <ape.anp@gmail.com>"
 LABEL author="Anders Bjørn Nedergaard <ape.anp@gmail.com>"
-LABEL description="A image for embedded clang compilation"
+LABEL description="A image for embedded development using clang as the default compiler"
 
 ENV USER=user
 
@@ -26,51 +26,34 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     python3 \
     sudo \
     git \
-    cmake \
     wget \
+    libssl-dev \
+    python3 \
+    python3-venv \
+    ninja-build \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --reinstall ca-certificates \
-    && apt-get clean  \
+    && apt-get clean
 
 RUN sudo mkdir /usr/local/share/ca-certificates/cacert.org \
     && sudo wget -P /usr/local/share/ca-certificates/cacert.org http://www.cacert.org/certs/root.crt http://www.cacert.org/certs/class3.crt \
     && sudo update-ca-certificates \
     && git config --global http.sslCAinfo /etc/ssl/certs/ca-certificates.crt
 
-RUN cd /tmp \
-    && git clone --branch llvmorg-14.0.6 --depth 1 --progress https://github.com/llvm/llvm-project.git llvm-project
+RUN version=v3.23.3; \
+    cd /tmp \
+    && git clone --branch $version --depth 1 --progress https://github.com/Kitware/CMake.git cmake
 
-RUN cd /tmp/llvm-project/compiler-rt \
-    && ls \
-    && mkdir build \
-    && cd build \
-    && cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
-    -DCOMPILER_RT_OS_DIR="baremetal" \
-    -DCOMPILER_RT_BUILD_BUILTINS=ON \
-    -DCOMPILER_RT_BUILD_SANITIZERS=OFF \
-    -DCOMPILER_RT_BUILD_XRAY=OFF \
-    -DCOMPILER_RT_BUILD_LIBFUZZER=OFF \
-    -DCOMPILER_RT_BUILD_PROFILE=OFF \
-    -DCMAKE_C_COMPILER=/usr/bin/clang \
-    -DCMAKE_C_COMPILER_TARGET=armv7m-none-eabi \
-    -DCMAKE_ASM_COMPILER_TARGET=armv7m-none-eabi \
-    -DCMAKE_AR=/usr/bin/llvm-ar \
-    -DCMAKE_NM=/usr/bin/llvm-nm \
-    -DCMAKE_LINKER=/usr/bin/ld.lld \
-    -DCMAKE_RANLIB=/usr/bin/llvm-ranlib \
-    -DCOMPILER_RT_BAREMETAL_BUILD=ON \
-    -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
-    -DLLVM_CONFIG_PATH=/usr/bin/llvm-config \
-    -DCMAKE_C_FLAGS="-mthumb -mfloat-abi=soft -mfpu=none" \
-    -DCMAKE_ASM_FLAGS="-mthumb -mfloat-abi=soft -mfpu=none" \
-    -DCOMPILER_RT_INCLUDE_TESTS=OFF \
-    -DCMAKE_SYSROOT=/usr/lib/arm-none-eabi .. \
+RUN cd /tmp/cmake \
+    && ./bootstrap --prefix=/usr \
     && make -j`nproc` && make install
 
-RUN version=3.23.2; \
-    wget --no-check-certificate -O cmake-$version-Linux-x86_64.sh https://github.com/Kitware/CMake/releases/download/v$version/cmake-$version-Linux-x86_64.sh \
- && sh cmake-$version-Linux-x86_64.sh -- --skip-license --prefix=/usr \
- && rm -f cmake-$version-Linux-x86_64.sh
+RUN cd /tmp \
+    && git clone --branch release-14.0.0 --depth 1 --progress https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm.git llvm-arm
+
+RUN cd /tmp/llvm-arm \
+    && ./setup.sh \
+    && . ./venv/bin/activate \
+    && build.py --use-ninja --install-dir /opt
 
 RUN useradd -s /bin/bash $USER
 RUN usermod -a -G sudo $USER
