@@ -1,2 +1,1 @@
-
-docker buildx build --platform linux/arm64,linux/amd64 --push -t cpp-build-env -f Dockerfile .
+docker buildx build --platform linux/amd64,linux/arm64 --push -t cpp-build-env -f Dockerfile .
