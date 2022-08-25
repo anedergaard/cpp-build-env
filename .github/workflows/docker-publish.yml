@@ -28,5 +28,9 @@ jobs:
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Build
-        run: scripts/docker_build.sh
+      -
+        name: Available platforms
+        run: echo ${{ steps.buildx.outputs.platforms }}
+        
+#      - name: Build
+#        run: scripts/docker_build.sh
