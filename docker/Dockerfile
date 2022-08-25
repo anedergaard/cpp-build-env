@@ -6,4 +6,4 @@ LABEL description="A image for embedded development using clang as the default c
 
 ENV USER=user
 
-
+RUN echo $BUILDPLATFORM
