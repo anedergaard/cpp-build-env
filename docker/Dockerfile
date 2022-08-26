@@ -17,9 +17,8 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     clang-tools \
     clang-tidy \
     clang-format \
-    libstdc++-12-dev \
-    libstdc++-arm-none-eabi-newlib \
     llvm \
+    lldb \
     lld \
     ssh \
     tar \
