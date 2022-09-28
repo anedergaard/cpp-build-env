@@ -29,6 +29,7 @@ RUN DEBIAN_FRONTEND=noninteractive apt-get update \
     libssl-dev \
     python3 \
     python3-venv \
+    python3-pip \
     ninja-build \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --reinstall ca-certificates \
     && apt-get clean
@@ -47,12 +48,15 @@ RUN cd /tmp/cmake \
     && make -j`nproc` && make install
 
 RUN cd /tmp \
-    && git clone --branch release-14.0.0 --depth 1 --progress https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm.git llvm-arm
+    && git clone --depth 1 --progress https://github.com/ARM-software/LLVM-embedded-toolchain-for-Arm.git llvm-arm
 
-RUN cd /tmp/llvm-arm \
-    && ./setup.sh \
-    && . ./venv/bin/activate \
-    && build.py --use-ninja --install-dir /opt
+RUN pip3 install meson
+
+RUN cd /tmp/llvm-arm  \
+    && mkdir build  \
+    && cd build  \
+    && cmake .. -GNinja -DFETCHCONTENT_QUIET=OFF  \
+    && ninja llvm-toolchain
 
 RUN useradd -s /bin/bash $USER
 RUN usermod -a -G sudo $USER
